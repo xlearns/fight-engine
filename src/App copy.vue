@@ -1,27 +1,23 @@
 <script setup>
 import { onMounted } from "vue";
-let canvas, ctx, ch, cw, bg, bg1;
-let h = 230;
+let canvas, ctx, ch, cw, bg;
+let h = 380;
 let g = 8;
 let jump = false;
-let isOnFloor = true;
 let speed = 4;
 let jspeed = 10;
 let vx = 0,
   vy = 0,
   y = 0;
-
 let hero_config = {
-  x: 156,
-  y: 112,
+  x: 0,
+  y: 0,
 };
-
 function drawRect(config = {}) {
   let { x, y, w, h, c } = config;
   ctx.fillStyle = c;
   ctx.fillRect(x, y, w, h);
 }
-
 function drawArc(config = {}) {
   let { x, y, w, h, c } = config;
   ctx.beginPath();
@@ -29,7 +25,6 @@ function drawArc(config = {}) {
   ctx.arc(x, y, 25, 0, 2 * Math.PI);
   ctx.fill();
 }
-
 function footer() {
   drawRect({
     x: 0,
@@ -39,7 +34,6 @@ function footer() {
     c: "black",
   });
 }
-
 function hero() {
   drawRect({
     x: hero_config.x,
@@ -58,10 +52,8 @@ function hero() {
 }
 
 function background() {
-  ctx.drawImage(bg1, 0, 0, cw, ch, 0, 88, cw, ch);
-  ctx.drawImage(bg, 0, 0, cw, ch, 0, 50, cw, ch);
+  ctx.drawImage(bg, 0, 0, cw, ch, 0, 0, cw, ch);
 }
-
 function update() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   background();
@@ -76,9 +68,8 @@ function update() {
   } else if (keys["s"]) {
     vy += speed;
   }
-  if (keys[" "] && isOnFloor) {
+  if (keys[" "]) {
     jump = true;
-    isOnFloor = false;
   }
   if (jump) {
     if (y > 120) {
@@ -90,7 +81,6 @@ function update() {
   } else {
     y -= g;
     if (y <= 0) {
-      isOnFloor = true;
       y = 0;
     }
   }
@@ -117,8 +107,7 @@ function update() {
 }
 onMounted(() => {
   canvas = document.querySelector("canvas");
-  bg = document.querySelectorAll("img")[0];
-  bg1 = document.querySelectorAll("img")[1];
+  bg = document.querySelector("img");
   ctx = canvas.getContext("2d");
   ch = canvas.height;
   cw = canvas.width;
@@ -135,7 +124,7 @@ window.addEventListener("keyup", (e) => {
 </script>
 
 <template>
-  <img src="./assets/yg1.png" v-show="false" />
-  <img src="./assets/yg2.png" v-show="false" />
+  <img src="./assets/sly.png" v-show="false" />
+  <img src="./assets/sly.png" v-show="false" />
   <canvas width="800" height="600" />
 </template>
