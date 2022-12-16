@@ -1,6 +1,14 @@
 <script setup>
 import { onMounted } from "vue";
 let canvas, ctx, ch, cw, bg, bg1;
+const debug = true;
+const jumpHeight = 120;
+const map = {
+  width: 1360,
+  x: 0,
+  y: 0,
+};
+const screen = 800;
 let h = 230;
 let g = 8;
 let jump = false;
@@ -48,18 +56,35 @@ function hero() {
     h: 80,
     c: "blue",
   });
-  drawRect({
-    x: hero_config.x,
-    y: ch - h + 80 + hero_config.y,
-    w: 50,
-    h: 20,
-    c: "red",
-  });
+  const _y = ch - h + 80 + hero_config.y;
+  const _x = hero_config.x;
+  // 光环
+  // drawRect({
+  //   x: _x,
+  //   y: _y,
+  //   w: 50,
+  //   h: 0,
+  //   c: "red",
+  // });
+  if (debug) {
+    ctx.fillStyle = "#fff";
+    ctx.fillText(
+      `人物坐标：x:${_x},y:${_y},${
+        !isOnFloor ? "正在跳跃跳跃坐标为：" + y : ""
+      }`,
+      _x - 28,
+      _y + 10
+    );
+
+    ctx.fillText(`当前为调试模式`, 10, 65);
+    ctx.fillText(`地图信息：x:${map.x},y:${map.y}`, 10, 85);
+  }
 }
 
 function background() {
-  ctx.drawImage(bg1, 0, 0, cw, ch, 0, 88, cw, ch);
-  ctx.drawImage(bg, 0, 0, cw, ch, 0, 50, cw, ch);
+  ctx.drawImage(bg1, map.x, 0, cw, ch, 0, 88, cw, ch);
+
+  ctx.drawImage(bg, map.x, 0, cw, ch, 0, 50, cw, ch);
 }
 
 function update() {
@@ -81,8 +106,8 @@ function update() {
     isOnFloor = false;
   }
   if (jump) {
-    if (y > 120) {
-      y = 120;
+    if (y > jumpHeight) {
+      y = jumpHeight;
       jump = false;
     } else {
       y += jspeed;
@@ -94,16 +119,27 @@ function update() {
       y = 0;
     }
   }
-  hero_config.x += vx;
-  hero_config.y += vy;
+  if (
+    (vx > 0 &&
+      hero_config.x + 150 > screen &&
+      map.x + hero_config.x + 150 < map.width) ||
+    (vx < 0 && map.x > 0 && hero_config.x - 150 <= 0)
+  ) {
+    map.x += vx;
+  } else {
+    hero_config.x += vx;
+    hero_config.y += vy;
+  }
+
+  if (map.x + hero_config.x >= map.width - 50) {
+    hero_config.x = screen - 50;
+    hero_config.y += vy;
+  }
   vx = 0;
   vy = 0;
-  //限制
-  if (hero_config.x <= 0) {
+
+  if (hero_config.x <= 0 && map.x <= 0) {
     hero_config.x = 0;
-  }
-  if (hero_config.x >= cw - 50) {
-    hero_config.x = cw - 50;
   }
   if (hero_config.y >= h - 100) {
     hero_config.y = h - 100;
