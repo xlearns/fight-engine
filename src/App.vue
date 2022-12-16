@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted } from "vue";
 let canvas, ctx, ch, cw, bg, bg1;
-const debug = true;
+let debug = false;
 const jumpHeight = 120;
 const map = {
   width: 1360,
@@ -164,6 +164,9 @@ onMounted(() => {
 let keys = {};
 window.addEventListener("keydown", (e) => {
   keys[e.key] = true;
+  if (e.key == "F2") {
+    debug = !debug;
+  }
 });
 window.addEventListener("keyup", (e) => {
   keys[e.key] = false;
