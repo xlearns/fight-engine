@@ -1,7 +1,10 @@
 <script setup>
 import { onMounted } from "vue";
-let canvas, ctx, ch, cw, bg, bg1;
+import JSZip from "jszip";
+import JSZipUtils from "jszip-utils";
+let canvas, ctx, ch, cw, bg, bg1, images, offset, currentFrame;
 let debug = false;
+const keys = {};
 const jumpHeight = 120;
 const map = {
   width: 1360,
@@ -9,6 +12,9 @@ const map = {
   y: 0,
 };
 const screen = 800;
+let actions = {
+  rest: [176, 177, 178, 179],
+};
 let h = 230;
 let g = 8;
 let jump = false;
@@ -49,13 +55,24 @@ function footer() {
 }
 
 function hero() {
-  drawRect({
-    x: hero_config.x,
-    y: ch - h + hero_config.y - y,
-    w: 50,
-    h: 80,
-    c: "blue",
+  let image = images[actions.rest[currentFrame]];
+  image.async("blob").then(function (blob) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    background();
+    let img = new Image();
+    img.src = URL.createObjectURL(blob);
+    img.onload = function () {
+      ctx.drawImage(img, hero_config.x, ch - h + hero_config.y - y);
+    };
   });
+
+  // drawRect({
+  //   x: hero_config.x,
+  //   y: ch - h + hero_config.y - y,
+  //   w: 50,
+  //   h: 80,
+  //   c: "blue",
+  // });
   const _y = ch - h + 80 + hero_config.y;
   const _x = hero_config.x;
   // 光环
@@ -75,7 +92,6 @@ function hero() {
       _x - 28,
       _y + 10
     );
-
     ctx.fillText(`当前为调试模式`, 10, 65);
     ctx.fillText(`地图信息：x:${map.x},y:${map.y}`, 10, 85);
   }
@@ -83,13 +99,10 @@ function hero() {
 
 function background() {
   ctx.drawImage(bg1, map.x, 0, cw, ch, 0, 88, cw, ch);
-
   ctx.drawImage(bg, map.x, 0, cw, ch, 0, 50, cw, ch);
 }
 
 function update() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  background();
   // footer();
   hero();
   if (keys["d"]) {
@@ -101,10 +114,12 @@ function update() {
   } else if (keys["s"]) {
     vy += speed;
   }
+
   if (keys[" "] && isOnFloor) {
     jump = true;
     isOnFloor = false;
   }
+
   if (jump) {
     if (y > jumpHeight) {
       y = jumpHeight;
@@ -119,6 +134,7 @@ function update() {
       y = 0;
     }
   }
+
   if (
     (vx > 0 &&
       hero_config.x + 150 > screen &&
@@ -135,12 +151,14 @@ function update() {
     hero_config.x = screen - 50;
     hero_config.y += vy;
   }
+
   vx = 0;
   vy = 0;
 
   if (hero_config.x <= 0 && map.x <= 0) {
     hero_config.x = 0;
   }
+
   if (hero_config.y >= h - 100) {
     hero_config.y = h - 100;
   }
@@ -149,8 +167,10 @@ function update() {
     hero_config.y = -80;
   }
 
+  currentFrame = (currentFrame + 1) % actions.rest.length;
   window.requestAnimationFrame(update);
 }
+
 onMounted(() => {
   canvas = document.querySelector("canvas");
   bg = document.querySelectorAll("img")[0];
@@ -158,10 +178,27 @@ onMounted(() => {
   ctx = canvas.getContext("2d");
   ch = canvas.height;
   cw = canvas.width;
-  update();
+  currentFrame = 0;
+  JSZipUtils.getBinaryContent("sm_body80200.zip", function (err, data) {
+    if (err) {
+      throw err; // or handle err
+    }
+
+    JSZip.loadAsync(data).then(function (zip) {
+      images = zip
+        .file(/\.png$/i)
+        .sort((a, b) => parseFloat(a.name) - parseFloat(b.name));
+      offset = zip.file(/\.js$/i);
+      //start
+      start();
+    });
+  });
 });
 
-let keys = {};
+function start() {
+  update();
+}
+
 window.addEventListener("keydown", (e) => {
   keys[e.key] = true;
   if (e.key == "F2") {
