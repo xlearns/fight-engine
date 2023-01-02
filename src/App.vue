@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import JSZipUtils from "jszip-utils";
 let canvas, ctx, ch, cw, bg, bg1, images, offset, currentFrame;
 let debug = false;
+const heroImages = [];
 const keys = {};
 const jumpHeight = 120;
 const map = {
@@ -12,6 +13,7 @@ const map = {
   y: 0,
 };
 const screen = 800;
+let frameTime = { previous: 0, secondPassed: 0 };
 let actions = {
   rest: [176, 177, 178, 179],
 };
@@ -54,35 +56,27 @@ function footer() {
   });
 }
 
-function hero() {
-  let image = images[actions.rest[currentFrame]];
-  image.async("blob").then(function (blob) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    background();
-    let img = new Image();
-    img.src = URL.createObjectURL(blob);
-    img.onload = function () {
-      ctx.drawImage(img, hero_config.x, ch - h + hero_config.y - y);
-    };
-  });
+function Animate() {}
 
-  // drawRect({
-  //   x: hero_config.x,
-  //   y: ch - h + hero_config.y - y,
-  //   w: 50,
-  //   h: 80,
-  //   c: "blue",
-  // });
+function hero() {
+  // console.log(heroImages)
+  drawRect({
+    x: hero_config.x,
+    y: ch - h + hero_config.y - y,
+    w: 50,
+    h: 80,
+    c: "blue",
+  });
   const _y = ch - h + 80 + hero_config.y;
   const _x = hero_config.x;
   // 光环
-  // drawRect({
-  //   x: _x,
-  //   y: _y,
-  //   w: 50,
-  //   h: 0,
-  //   c: "red",
-  // });
+  drawRect({
+    x: _x,
+    y: _y,
+    w: 50,
+    h: 20,
+    c: "red",
+  });
   if (debug) {
     ctx.fillStyle = "#fff";
     ctx.fillText(
@@ -102,8 +96,9 @@ function background() {
   ctx.drawImage(bg, map.x, 0, cw, ch, 0, 50, cw, ch);
 }
 
-function update() {
-  // footer();
+function update(time) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  background();
   hero();
   if (keys["d"]) {
     vx += speed;
@@ -169,6 +164,12 @@ function update() {
 
   currentFrame = (currentFrame + 1) % actions.rest.length;
   window.requestAnimationFrame(update);
+  frameTime = {
+    secondPassed: (time - frameTime.previous) / 1000,
+    previous: time,
+  };
+
+  console.log(frameTime);
 }
 
 onMounted(() => {
@@ -189,14 +190,27 @@ onMounted(() => {
         .file(/\.png$/i)
         .sort((a, b) => parseFloat(a.name) - parseFloat(b.name));
       offset = zip.file(/\.js$/i);
-      //start
       start();
     });
   });
 });
 
 function start() {
-  update();
+  let i = 0;
+  images.forEach((image) => {
+    image.async("blob").then(function (blob) {
+      let img = new Image();
+      img.src = URL.createObjectURL(blob);
+      img.onload = function () {
+        heroImages[i] = img;
+        if (i >= images.length - 1) {
+          window.requestAnimationFrame(update);
+        } else {
+          i++;
+        }
+      };
+    });
+  });
 }
 
 window.addEventListener("keydown", (e) => {
